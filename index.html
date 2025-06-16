@@ -95,3 +95,31 @@
 
 </body>
 </html>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const bgmusic = document.getElementById("bgmusic");
+
+    if (!bgmusic) {
+      console.error("❌ Elemen #bgmusic tidak ditemukan");
+      return;
+    } else {
+      console.log("✅ Elemen #bgmusic ditemukan");
+    }
+
+    bgmusic.addEventListener('canplay', () => {
+      console.log("🎵 File musik siap diputar");
+    });
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("🎧 AudioContext status awal:", audioCtx.state);
+
+    // Untuk mengaktifkan AudioContext setelah klik
+    window.addEventListener('click', () => {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+          console.log("🔊 AudioContext resumed setelah klik");
+        });
+      }
+    });
+  });
+</script>
