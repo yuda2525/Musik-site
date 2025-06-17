@@ -11,7 +11,6 @@
       font-family: sans-serif;
     }
 
-    /* Tombol mute */
     #mute-btn {
       position: fixed;
       top: 20px;
@@ -44,11 +43,11 @@
 <!-- Tombol mute -->
 <button id="mute-btn">🔊</button>
 
-<!-- Canvas Equalizer -->
+<!-- Equalizer Ring -->
 <canvas id="eq-ring" width="120" height="120"></canvas>
 
 <!-- Audio -->
-<audio id="bg-audio" autoplay loop>
+<audio id="bg-audio" autoplay loop crossorigin="anonymous">
   <source src="https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a" type="audio/mp4">
   Browser kamu tidak support audio.
 </audio>
@@ -59,39 +58,29 @@
   const canvas = document.getElementById("eq-ring");
   const ctx = canvas.getContext("2d");
 
-  audio.volume = 0.3;
+  let audioCtx, gainNode, filter, sourceNode;
+  let initialized = false;
 
-  muteBtn.addEventListener("click", () => {
-    audio.muted = !audio.muted;
-    muteBtn.textContent = audio.muted ? "🔇" : "🔊";
-  });
-
-  document.addEventListener("click", () => {
-    audio.play().catch(() => {});
-  }, { once: true });
-
-  // Equalizer Ring (mini)
+  // Prepare equalizer animation
   const bars = 24;
   const radius = 35;
-  let angle, x, y, barHeight;
-
   function drawEqualizer() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
 
     for (let i = 0; i < bars; i++) {
-      angle = (Math.PI * 2 / bars) * i;
-      barHeight = 8 + Math.sin(Date.now() / 200 + i) * 15;
-      x = Math.cos(angle) * radius;
-      y = Math.sin(angle) * radius;
+      const angle = (Math.PI * 2 / bars) * i;
+      const barHeight = 8 + Math.sin(Date.now() / 200 + i) * 15;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius;
 
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x * 1.15, y * 1.15);
       ctx.strokeStyle = "cyan";
       ctx.shadowBlur = 10;
-      ctx.shadowColor = "#00ffff";
+      ctx.shadowColor = "#0ff";
       ctx.lineWidth = barHeight / 12;
       ctx.stroke();
     }
@@ -101,6 +90,35 @@
   }
 
   drawEqualizer();
+
+  // Tombol mute
+  muteBtn.addEventListener("click", () => {
+    audio.muted = !audio.muted;
+    muteBtn.textContent = audio.muted ? "🔇" : "🔊";
+  });
+
+  // Trigger once on user interaction
+  document.addEventListener("click", () => {
+    if (!initialized) {
+      initialized = true;
+
+      // Setup Web Audio API
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      sourceNode = audioCtx.createMediaElementSource(audio);
+      gainNode = audioCtx.createGain();
+      filter = audioCtx.createBiquadFilter();
+
+      gainNode.gain.value = 0.3; // smooth
+      filter.type = "lowpass";
+      filter.frequency.value = 14000; // ambience
+
+      sourceNode.connect(gainNode);
+      gainNode.connect(filter);
+      filter.connect(audioCtx.destination);
+
+      audio.play().catch(() => {});
+    }
+  }, { once: true });
 </script>
 
 </body>
