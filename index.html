@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Y&Z Audio Ring EQ Mini</title>
+  <title>Y&Z Audio Ring EQ Playlist</title>
   <style>
     body {
       margin: 0;
@@ -43,14 +43,11 @@
 <!-- Tombol mute -->
 <button id="mute-btn">🔊</button>
 
-<!-- Equalizer Ring -->
+<!-- Canvas Equalizer -->
 <canvas id="eq-ring" width="120" height="120"></canvas>
 
-<!-- Audio -->
-<audio id="bg-audio" autoplay loop crossorigin="anonymous">
-  <source src="https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a" type="audio/mp4">
-  Browser kamu tidak support audio.
-</audio>
+<!-- Audio Player -->
+<audio id="bg-audio" autoplay loop crossorigin="anonymous"></audio>
 
 <script>
   const audio = document.getElementById("bg-audio");
@@ -61,7 +58,21 @@
   let audioCtx, gainNode, filter, sourceNode;
   let initialized = false;
 
-  // Prepare equalizer animation
+  // Daftar musik (auto putar bergantian)
+  const tracks = [
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a",
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a",
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a"
+  ];
+
+  let currentTrack = 0;
+
+  function playTrack(index) {
+    audio.src = tracks[index];
+    audio.play();
+  }
+
+  // EQ Ring effect
   const bars = 24;
   const radius = 35;
   function drawEqualizer() {
@@ -91,13 +102,19 @@
 
   drawEqualizer();
 
-  // Tombol mute
+  // Mute toggle
   muteBtn.addEventListener("click", () => {
     audio.muted = !audio.muted;
     muteBtn.textContent = audio.muted ? "🔇" : "🔊";
   });
 
-  // Trigger once on user interaction
+  // Ganti lagu setelah selesai
+  audio.addEventListener("ended", () => {
+    currentTrack = (currentTrack + 1) % tracks.length;
+    playTrack(currentTrack);
+  });
+
+  // Inisialisasi WebAudio + main musik
   document.addEventListener("click", () => {
     if (!initialized) {
       initialized = true;
@@ -108,15 +125,15 @@
       gainNode = audioCtx.createGain();
       filter = audioCtx.createBiquadFilter();
 
-      gainNode.gain.value = 0.3; // smooth
+      gainNode.gain.value = 0.3;
       filter.type = "lowpass";
-      filter.frequency.value = 14000; // ambience
+      filter.frequency.value = 14000;
 
       sourceNode.connect(gainNode);
       gainNode.connect(filter);
       filter.connect(audioCtx.destination);
 
-      audio.play().catch(() => {});
+      playTrack(currentTrack); // mulai main track pertama
     }
   }, { once: true });
 </script>
