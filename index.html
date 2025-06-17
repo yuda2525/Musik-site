@@ -2,14 +2,13 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Y&Z Audio Play</title>
+  <title>Y&Z Audio Ring EQ Mini</title>
   <style>
     body {
-      background: #0a0a0a;
       margin: 0;
-      padding: 20px;
+      background: #0a0a0a;
+      overflow: hidden;
       font-family: sans-serif;
-      color: white;
     }
 
     /* Tombol mute */
@@ -26,34 +25,17 @@
       color: white;
       cursor: pointer;
       backdrop-filter: blur(4px);
+      box-shadow: 0 0 6px rgba(255,255,255,0.3);
+      z-index: 2;
     }
 
-    /* Equalizer Modern */
-    .equalizer {
+    canvas {
       position: fixed;
       bottom: 20px;
       left: 20px;
-      display: flex;
-      gap: 5px;
-      height: 30px;
-    }
-
-    .eq-bar {
-      width: 6px;
-      background: linear-gradient(to top, #00ffff, #ffffff);
-      border-radius: 3px;
-      animation: pulse 1.2s infinite ease-in-out;
-    }
-
-    .eq-bar:nth-child(1) { animation-delay: 0s; }
-    .eq-bar:nth-child(2) { animation-delay: 0.2s; }
-    .eq-bar:nth-child(3) { animation-delay: 0.4s; }
-    .eq-bar:nth-child(4) { animation-delay: 0.3s; }
-    .eq-bar:nth-child(5) { animation-delay: 0.1s; }
-
-    @keyframes pulse {
-      0%, 100% { height: 8px; }
-      50% { height: 30px; }
+      width: 120px;
+      height: 120px;
+      z-index: 1;
     }
   </style>
 </head>
@@ -62,38 +44,63 @@
 <!-- Tombol mute -->
 <button id="mute-btn">🔊</button>
 
-<!-- Equalizer Modern -->
-<div class="equalizer">
-  <div class="eq-bar"></div>
-  <div class="eq-bar"></div>
-  <div class="eq-bar"></div>
-  <div class="eq-bar"></div>
-  <div class="eq-bar"></div>
-</div>
+<!-- Canvas Equalizer -->
+<canvas id="eq-ring" width="120" height="120"></canvas>
 
-<!-- Audio autoplay -->
+<!-- Audio -->
 <audio id="bg-audio" autoplay loop>
   <source src="https://raw.githubusercontent.com/yuda2525/YZ-site/main/Yiruma%2C%20(%EC%9D%B4%EB%A3%A8%EB%A7%88)%20-%20Kiss%20the%20Rain.m4a" type="audio/mp4">
   Browser kamu tidak support audio.
 </audio>
 
 <script>
-  const audio = document.getElementById('bg-audio');
-  const btn = document.getElementById('mute-btn');
+  const audio = document.getElementById("bg-audio");
+  const muteBtn = document.getElementById("mute-btn");
+  const canvas = document.getElementById("eq-ring");
+  const ctx = canvas.getContext("2d");
 
-  // Volume publik (30% cukup clear, gak ganggu)
   audio.volume = 0.3;
 
-  // Mute toggle
-  btn.addEventListener('click', () => {
+  muteBtn.addEventListener("click", () => {
     audio.muted = !audio.muted;
-    btn.textContent = audio.muted ? '🔇' : '🔊';
+    muteBtn.textContent = audio.muted ? "🔇" : "🔊";
   });
 
-  // Autoplay trigger (bypass blokir)
-  document.addEventListener('click', () => {
+  document.addEventListener("click", () => {
     audio.play().catch(() => {});
   }, { once: true });
+
+  // Equalizer Ring (mini)
+  const bars = 24;
+  const radius = 35;
+  let angle, x, y, barHeight;
+
+  function drawEqualizer() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+
+    for (let i = 0; i < bars; i++) {
+      angle = (Math.PI * 2 / bars) * i;
+      barHeight = 8 + Math.sin(Date.now() / 200 + i) * 15;
+      x = Math.cos(angle) * radius;
+      y = Math.sin(angle) * radius;
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x * 1.15, y * 1.15);
+      ctx.strokeStyle = "cyan";
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = "#00ffff";
+      ctx.lineWidth = barHeight / 12;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+    requestAnimationFrame(drawEqualizer);
+  }
+
+  drawEqualizer();
 </script>
 
 </body>
