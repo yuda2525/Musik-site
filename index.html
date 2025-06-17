@@ -28,6 +28,14 @@
       z-index: 2;
     }
 
+    #volume-slider {
+      position: fixed;
+      top: 30px;
+      left: 20px;
+      width: 100px;
+      z-index: 2;
+    }
+
     canvas {
       position: fixed;
       bottom: 20px;
@@ -41,7 +49,10 @@
 <body>
 
 <!-- Tombol mute -->
-<button id="mute-btn">🔊</button>
+<button id="mute-btn"></button>
+
+<!-- Slider volume -->
+<input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.3">
 
 <!-- Canvas Equalizer -->
 <canvas id="eq-ring" width="120" height="120"></canvas>
@@ -52,27 +63,33 @@
 <script>
   const audio = document.getElementById("bg-audio");
   const muteBtn = document.getElementById("mute-btn");
+  const volumeSlider = document.getElementById("volume-slider");
   const canvas = document.getElementById("eq-ring");
   const ctx = canvas.getContext("2d");
 
-  let audioCtx, gainNode, filter, sourceNode;
+  let audioCtx, gainNode, filter, sourceNode, panner;
   let initialized = false;
 
-  // Daftar musik (auto putar bergantian)
   const tracks = [
-    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Baby%20I%20Love%20Your%20Way.m4a",
-    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Baby%20I%20Love%20Your%20Way.m4a",
-    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Baby%20I%20Love%20Your%20Way.m4a"
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Avenged%20Sevenfold%20-%20So%20Far%20Away%20%5BOfficial%20Music%20Video%5D.m4a",
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Avenged%20Sevenfold%20-%20So%20Far%20Away%20%5BOfficial%20Music%20Video%5D.m4a",
+    "https://raw.githubusercontent.com/yuda2525/YZ-site/main/Avenged%20Sevenfold%20-%20So%20Far%20Away%20%5BOfficial%20Music%20Video%5D.m4a"
   ];
 
   let currentTrack = 0;
+
+  // Emoji Unicode stabil
+  const volumeOnIcon = "\uD83D\uDD0A"; // 🔊
+  const volumeOffIcon = "\uD83D\uDD07"; // 🔇
+
+  // Set icon awal
+  muteBtn.textContent = audio.muted ? volumeOffIcon : volumeOnIcon;
 
   function playTrack(index) {
     audio.src = tracks[index];
     audio.play();
   }
 
-  // EQ Ring effect
   const bars = 24;
   const radius = 35;
   function drawEqualizer() {
@@ -102,38 +119,45 @@
 
   drawEqualizer();
 
-  // Mute toggle
   muteBtn.addEventListener("click", () => {
     audio.muted = !audio.muted;
-    muteBtn.textContent = audio.muted ? "🔇" : "🔊";
+    muteBtn.textContent = audio.muted ? volumeOffIcon : volumeOnIcon;
   });
 
-  // Ganti lagu setelah selesai
   audio.addEventListener("ended", () => {
     currentTrack = (currentTrack + 1) % tracks.length;
     playTrack(currentTrack);
   });
 
-  // Inisialisasi WebAudio + main musik
   document.addEventListener("click", () => {
     if (!initialized) {
       initialized = true;
 
-      // Setup Web Audio API
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       sourceNode = audioCtx.createMediaElementSource(audio);
       gainNode = audioCtx.createGain();
       filter = audioCtx.createBiquadFilter();
+      panner = audioCtx.createStereoPanner();
 
-      gainNode.gain.value = 0.3;
+      gainNode.gain.value = parseFloat(volumeSlider.value);
       filter.type = "lowpass";
       filter.frequency.value = 14000;
 
       sourceNode.connect(gainNode);
       gainNode.connect(filter);
-      filter.connect(audioCtx.destination);
+      filter.connect(panner);
+      panner.connect(audioCtx.destination);
 
-      playTrack(currentTrack); // mulai main track pertama
+      setInterval(() => {
+        panner.pan.value = Math.sin(Date.now() / 1000); // stereo kiri-kanan
+      }, 100);
+
+      // Volume slider aktif
+      volumeSlider.addEventListener("input", () => {
+        gainNode.gain.value = parseFloat(volumeSlider.value);
+      });
+
+      playTrack(currentTrack);
     }
   }, { once: true });
 </script>
